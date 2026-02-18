@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="GET" action="/" class="mb-3">
+    <div class="input-group">
+        <input type="text" name="search" class="form-control"
+               placeholder="Search by Customer Name or ID"
+               value="{{ search if search }}">
+        <button class="btn btn-success">Search</button>
+        <a href="/" class="btn btn-secondary">Clear</a>
+    </div>
+</form>
+
+<h3>All Bills</h3>
+<a href="/add_bill" class="btn btn-primary mb-3">+ New Bill</a>
+
+{% for bill in bills %}
+<div class="card mb-4">
+    <div class="card-header">
+    <strong>Bill ID:</strong> {{ bill.id }} |
+    <strong>Date:</strong> {{ bill.bill_date }} |
+    <strong>Customer:</strong> {{ bill.customer_name }} |
+    <strong>Customer ID:</strong> {{ bill.customer_id }} |
+    <strong>Total:</strong> ₹ {{ bill.total }}
+    </div>
+
+
+    <div class="card-body">
+        <table class="table table-sm">
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Item Total</th>
+            </tr>
+
+            {% for item in bill_items %}
+                {% if item.bill_id == bill.id %}
+                <tr>
+                    <td>{{ item.product_name }}</td>
+                    <td>₹ {{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>₹ {{ item.item_total }}</td>
+                </tr>
+                {% endif %}
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

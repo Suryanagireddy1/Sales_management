@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h3>New Bill</h3>
+
+<form method="POST">
+
+<label>Customer</label>
+<select name="customer" class="form-control mb-3">
+    {% for customer in customers %}
+    <option value="{{ customer.id }}">{{ customer.name }}</option>
+    {% endfor %}
+</select>
+
+<table class="table" id="productTable">
+<tr>
+    <th>Product</th>
+    <th>Price</th>
+    <th>Qty</th>
+</tr>
+
+<tr>
+<td>
+<select name="product[]" class="form-control">
+    {% for product in products %}
+    <option value="{{ product.id }}">{{ product.name }}</option>
+    {% endfor %}
+</select>
+</td>
+<td><input type="number" name="price[]" class="form-control"></td>
+<td><input type="number" name="quantity[]" class="form-control"></td>
+</tr>
+
+</table>
+
+<button type="submit" class="btn btn-success">Save</button>
+
+</form>
+
+{% endblock %}
