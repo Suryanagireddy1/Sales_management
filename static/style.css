@@ -92,9 +92,42 @@ h3 {
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Responsive Spacing */
 @media (max-width: 768px) {
-    .card-header .row > div {
-        margin-bottom: 5px;
+
+    h3 {
+        font-size: 18px;
+    }
+
+    .card-header {
+        font-size: 13px;
+    }
+
+    /* DO NOT override input-group display */
+    .input-group {
+        flex-wrap: wrap;
+    }
+
+    .input-group input {
+        width: 100%;
+        margin-bottom: 8px;
+        border-radius: 8px;
+    }
+
+    .input-group .btn {
+        width: 100%;
+        border-radius: 8px;
+        margin-bottom: 6px;
+    }
+
+    /* Improve tables */
+    .table {
+        font-size: 13px;
+    }
+
+    /* Only large action buttons full width */
+    .btn-primary,
+    .btn-success {
+        width: 100%;
+        margin-bottom: 10px;
     }
 }

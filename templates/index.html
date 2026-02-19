@@ -9,15 +9,16 @@
 
 <!-- Search Card -->
 <div class="card p-3 mb-4 shadow-sm">
-    <form method="GET" action="/">
-        <div class="input-group">
-            <input type="text" name="search" class="form-control"
-                   placeholder="Search by Customer Name or ID"
-                   value="{{ search if search }}">
-            <button class="btn btn-success">Search</button>
-            <a href="/" class="btn btn-outline-secondary">Clear</a>
-        </div>
-    </form>
+    <form method="GET" action="/" class="mb-3">
+    <div class="search-box">
+        <input type="text" name="search" class="form-control"
+               placeholder="Search by Customer Name or ID"
+               value="{{ search if search }}">
+        <button class="btn btn-success">Search</button>
+        <a href="/" class="btn btn-secondary">Clear</a>
+    </div>
+</form>
+
 </div>
 
 <!-- Bills List -->
