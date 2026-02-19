@@ -1,40 +1,100 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<h3>New Bill</h3>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">🧾 Create New Bill</h3>
+    <a href="/" class="btn btn-outline-secondary">← Back</a>
+</div>
+
+<div class="card shadow-sm border-0 p-4">
 
 <form method="POST">
 
-<label>Customer</label>
-<select name="customer" class="form-control mb-3">
-    {% for customer in customers %}
-    <option value="{{ customer.id }}">{{ customer.name }}</option>
-    {% endfor %}
-</select>
+    <!-- Customer Selection -->
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Select Customer</label>
+        <select name="customer" class="form-select">
+            {% for customer in customers %}
+            <option value="{{ customer.id }}">
+                {{ customer.name }} (ID: {{ customer.id }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
 
-<table class="table" id="productTable">
-<tr>
-    <th>Product</th>
-    <th>Price</th>
-    <th>Qty</th>
-</tr>
+    <!-- Product Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="productTable">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 40%">Product</th>
+                    <th style="width: 20%">Price</th>
+                    <th style="width: 20%">Qty</th>
+                    <th style="width: 20%">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <select name="product[]" class="form-select">
+                            {% for product in products %}
+                            <option value="{{ product.id }}">
+                                {{ product.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="price[]" class="form-control">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="quantity[]" class="form-control">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-danger btn-sm remove-row">X</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
-<tr>
-<td>
-<select name="product[]" class="form-control">
-    {% for product in products %}
-    <option value="{{ product.id }}">{{ product.name }}</option>
-    {% endfor %}
-</select>
-</td>
-<td><input type="number" name="price[]" class="form-control"></td>
-<td><input type="number" name="quantity[]" class="form-control"></td>
-</tr>
+    <!-- Add Product Button -->
+    <div class="mb-3">
+        <button type="button" class="btn btn-outline-primary btn-sm" id="addRow">
+            + Add Product
+        </button>
+    </div>
 
-</table>
-
-<button type="submit" class="btn btn-success">Save</button>
+    <!-- Submit -->
+    <div class="text-end">
+        <button type="submit" class="btn btn-success px-4">
+            Save Bill
+        </button>
+    </div>
 
 </form>
+</div>
+
+<!-- JavaScript for dynamic rows -->
+<script>
+document.getElementById("addRow").addEventListener("click", function() {
+    let table = document.querySelector("#productTable tbody");
+    let newRow = table.rows[0].cloneNode(true);
+
+    // Clear inputs
+    newRow.querySelectorAll("input").forEach(input => input.value = "");
+
+    table.appendChild(newRow);
+});
+
+document.addEventListener("click", function(e) {
+    if (e.target.classList.contains("remove-row")) {
+        let rows = document.querySelectorAll("#productTable tbody tr");
+        if (rows.length > 1) {
+            e.target.closest("tr").remove();
+        }
+    }
+});
+</script>
 
 {% endblock %}

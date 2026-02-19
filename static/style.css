@@ -1,0 +1,100 @@
+/* General Layout */
+body {
+    background-color: #f4f6f9;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+h3 {
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+/* Cards */
+.card {
+    border-radius: 14px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+    border: none;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: #ffffff;
+    font-weight: 600;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Tables */
+.table th {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.table td {
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Forms */
+.form-control,
+.form-select {
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.2);
+    border-color: #4e73df;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 6px 14px;
+}
+
+.btn-primary {
+    background-color: #4e73df;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #2e59d9;
+}
+
+.btn-success {
+    background-color: #1cc88a;
+    border: none;
+}
+
+.btn-success:hover {
+    background-color: #17a673;
+}
+
+/* Search Input Group */
+.input-group input {
+    border-radius: 8px 0 0 8px;
+}
+
+.input-group .btn {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Spacing */
+@media (max-width: 768px) {
+    .card-header .row > div {
+        margin-bottom: 5px;
+    }
+}

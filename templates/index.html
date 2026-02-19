@@ -1,51 +1,75 @@
 {% extends "layout.html" %}
 {% block content %}
-<form method="GET" action="/" class="mb-3">
-    <div class="input-group">
-        <input type="text" name="search" class="form-control"
-               placeholder="Search by Customer Name or ID"
-               value="{{ search if search }}">
-        <button class="btn btn-success">Search</button>
-        <a href="/" class="btn btn-secondary">Clear</a>
-    </div>
-</form>
 
-<h3>All Bills</h3>
-<a href="/add_bill" class="btn btn-primary mb-3">+ New Bill</a>
-
-{% for bill in bills %}
-<div class="card mb-4">
-    <div class="card-header">
-    <strong>Bill ID:</strong> {{ bill.id }} |
-    <strong>Date:</strong> {{ bill.bill_date }} |
-    <strong>Customer:</strong> {{ bill.customer_name }} |
-    <strong>Customer ID:</strong> {{ bill.customer_id }} |
-    <strong>Total:</strong> ₹ {{ bill.total }}
-    </div>
-
-
-    <div class="card-body">
-        <table class="table table-sm">
-            <tr>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Item Total</th>
-            </tr>
-
-            {% for item in bill_items %}
-                {% if item.bill_id == bill.id %}
-                <tr>
-                    <td>{{ item.product_name }}</td>
-                    <td>₹ {{ item.price }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>₹ {{ item.item_total }}</td>
-                </tr>
-                {% endif %}
-            {% endfor %}
-        </table>
-    </div>
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">📊 All Bills</h3>
+    <a href="/add_bill" class="btn btn-primary">+ New Bill</a>
 </div>
-{% endfor %}
+
+<!-- Search Card -->
+<div class="card p-3 mb-4 shadow-sm">
+    <form method="GET" action="/">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control"
+                   placeholder="Search by Customer Name or ID"
+                   value="{{ search if search }}">
+            <button class="btn btn-success">Search</button>
+            <a href="/" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Bills List -->
+{% if bills %}
+    {% for bill in bills %}
+    <div class="card mb-4 shadow-sm border-0">
+
+        <!-- Bill Header -->
+        <div class="card-header bg-light">
+            <div class="row">
+                <div class="col-md-2"><strong>Bill #{{ bill.id }}</strong></div>
+                <div class="col-md-3">📅 {{ bill.bill_date }}</div>
+                <div class="col-md-3">👤 {{ bill.customer_name }}</div>
+                <div class="col-md-2">ID: {{ bill.customer_id }}</div>
+                <div class="col-md-2 text-end fw-bold text-success">
+                    ₹ {{ bill.total }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bill Body -->
+        <div class="card-body p-0">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Item Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in bill_items %}
+                        {% if item.bill_id == bill.id %}
+                        <tr>
+                            <td>{{ item.product_name }}</td>
+                            <td>₹ {{ item.price }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td class="fw-semibold">₹ {{ item.item_total }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-info">
+        No bills found.
+    </div>
+{% endif %}
 
 {% endblock %}
