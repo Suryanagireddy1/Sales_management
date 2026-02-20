@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h3>Upload Invoice</h3>
+
+<div class="card p-4">
+
+    <!-- Upload File -->
+    <form action="/upload_invoice" method="POST" enctype="multipart/form-data">
+        <label class="form-label fw-bold">Upload Invoice (PDF / Image)</label>
+        <input type="file" name="invoice_file" class="form-control mb-3">
+
+        <hr>
+
+        <!-- Textarea for direct text input -->
+        <label class="form-label fw-bold">Or Paste Invoice Text</label>
+        <textarea name="invoice_text" rows="8" class="form-control mb-3"
+                  placeholder="Paste the full text of the invoice here..."></textarea>
+
+        <hr>
+
+        <button class="btn btn-success w-100">Process Invoice</button>
+    </form>
+</div>
+
+{% endblock %}

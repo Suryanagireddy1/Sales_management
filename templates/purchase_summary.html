@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h3>Items Required to Purchase</h3>
+
+<table class="table table-striped">
+    <tr>
+        <th>Product</th>
+        <th>Total Quantity Needed</th>
+        <th>Avg Price (from customer orders)</th>
+        <th>Total Amount</th>
+    </tr>
+
+    {% for item in summary %}
+    <tr>
+        <td>{{ item.product_name }}</td>
+        <td>{{ item.total_quantity }}</td>
+        <td>₹ {{ item.avg_price }}</td>
+        <td>₹ {{ item.total_amount }}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}

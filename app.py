@@ -1,3 +1,7 @@
+import pytesseract
+from PIL import Image
+import pdfplumber
+import re
 from flask import Flask, render_template, request, redirect
 import sqlite3
 import psycopg2
@@ -11,102 +15,117 @@ app = Flask(__name__)
 # ---------------------------------------
 # AUTO SWITCH: SQLite (local) vs PostgreSQL (Render)
 # ---------------------------------------
-IS_RENDER = os.environ.get("RENDER") == "true"
+USE_POSTGRES = bool(os.environ.get("DATABASE_URL"))
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Only set on Render
+
+def clean_number(value):
+    """Clean OCR values safely."""
+    if not value:
+        return 0.0
+
+    value = value.replace(",", "").replace("Rs", "").replace("₹", "")
+    value = value.replace(":", "").replace(" ", "").replace("..", ".").strip()
+
+    if value in ["", ".", ".."]:
+        return 0.0
+
+    try:
+        return float(value)
+    except:
+        return 0.0
 
 
+# ---------------------------------------
+# DB CONNECTION
+# ---------------------------------------
 def get_db():
-    if IS_RENDER:
-        # Use PostgreSQL on Render
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-        return conn
+    if USE_POSTGRES:
+        return psycopg2.connect(
+            DATABASE_URL,
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
     else:
-        # Use SQLite locally
         conn = sqlite3.connect("database.db")
         conn.row_factory = sqlite3.Row
         return conn
 
 
 # ---------------------------------------
-# INITIALIZE TABLES (Both DBs)
+# UNIVERSAL QUERY EXECUTOR
+# ---------------------------------------
+def db_execute(cur, query, params=None, fetch=False, many=False):
+    if not USE_POSTGRES:
+        query = query.replace("%s", "?")
+
+    if params:
+        if many:
+            cur.executemany(query, params)
+        else:
+            cur.execute(query, params)
+    else:
+        cur.execute(query)
+
+    if fetch:
+        return cur.fetchall()
+
+    return None
+
+
+# ---------------------------------------
+# INITIALIZE TABLES
 # ---------------------------------------
 def init_db():
     conn = get_db()
     cur = conn.cursor()
 
-    if IS_RENDER:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS customers (
-                id SERIAL PRIMARY KEY,
-                name TEXT,
-                phone TEXT
-            );
-        """)
+    # Main app tables
+    db_execute(cur, """
+        CREATE TABLE IF NOT EXISTS customers (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            phone TEXT
+        );
+    """)
 
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS products (
-                id SERIAL PRIMARY KEY,
-                name TEXT,
-                price REAL
-            );
-        """)
+    db_execute(cur, """
+        CREATE TABLE IF NOT EXISTS products (
+            id SERIAL PRIMARY KEY,
+            name TEXT,
+            price REAL
+        );
+    """)
 
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS bills (
-                id SERIAL PRIMARY KEY,
-                customer_id INTEGER REFERENCES customers(id),
-                bill_date TEXT,
-                total REAL
-            );
-        """)
+    db_execute(cur, """
+        CREATE TABLE IF NOT EXISTS bills (
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER,
+            bill_date TEXT,
+            total REAL
+        );
+    """)
 
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS bill_items (
-                id SERIAL PRIMARY KEY,
-                bill_id INTEGER REFERENCES bills(id),
-                product_id INTEGER REFERENCES products(id),
-                price REAL,
-                quantity REAL,
-                item_total REAL
-            );
-        """)
-    else:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS customers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                phone TEXT
-            )
-        """)
+    db_execute(cur, """
+        CREATE TABLE IF NOT EXISTS bill_items (
+            id SERIAL PRIMARY KEY,
+            bill_id INTEGER,
+            product_id INTEGER,
+            price REAL,
+            quantity REAL,
+            item_total REAL
+        );
+    """)
 
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS products (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                price REAL
-            )
-        """)
-
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS bills (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                customer_id INTEGER,
-                bill_date TEXT,
-                total REAL
-            )
-        """)
-
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS bill_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                bill_id INTEGER,
-                product_id INTEGER,
-                price REAL,
-                quantity REAL,
-                item_total REAL
-            )
-        """)
+    # TEMPORARY TABLE FOR INVOICE UPLOADS
+    db_execute(cur, """
+        CREATE TABLE IF NOT EXISTS invoice_items_temp (
+            id SERIAL PRIMARY KEY,
+            product_name TEXT,
+            quantity REAL,
+            price REAL,
+            item_total REAL
+        );
+    """)
 
     conn.commit()
     cur.close()
@@ -120,13 +139,7 @@ def seed_data():
     conn = get_db()
     cur = conn.cursor()
 
-    # Count customers
-    if IS_RENDER:
-        cur.execute("SELECT COUNT(*) FROM customers;")
-        existing = cur.fetchone()["count"]
-    else:
-        cur.execute("SELECT COUNT(*) FROM customers;")
-        existing = cur.fetchone()[0]
+    existing = db_execute(cur, "SELECT COUNT(*) AS c FROM customers", fetch=True)[0]["c"]
 
     if existing > 0:
         cur.close()
@@ -150,31 +163,20 @@ def seed_data():
         "Dal", "Chilli Powder", "Turmeric", "Coriander", "Spinach"
     ]
 
-    # Insert customers
     for i in range(1, 106):
         name = random.choice(names) + str(i)
         phone = "9" + str(random.randint(100000000, 999999999))
+        db_execute(cur, "INSERT INTO customers (name, phone) VALUES (%s, %s)", (name, phone))
 
-        if IS_RENDER:
-            cur.execute("INSERT INTO customers (name, phone) VALUES (%s, %s)", (name, phone))
-        else:
-            cur.execute("INSERT INTO customers (name, phone) VALUES (?, ?)", (name, phone))
-
-    # Insert products
     for p in products:
         price = random.randint(10, 200)
-
-        if IS_RENDER:
-            cur.execute("INSERT INTO products (name, price) VALUES (%s, %s)", (p, price))
-        else:
-            cur.execute("INSERT INTO products (name, price) VALUES (?, ?)", (p, price))
+        db_execute(cur, "INSERT INTO products (name, price) VALUES (%s, %s)", (p, price))
 
     conn.commit()
     cur.close()
     conn.close()
 
 
-# Run setup
 with app.app_context():
     init_db()
     seed_data()
@@ -189,64 +191,33 @@ def index():
     cur = conn.cursor()
 
     search = request.args.get("search")
+    query = """
+        SELECT bills.id, bills.bill_date, bills.total,
+               customers.id AS customer_id,
+               customers.name AS customer_name
+        FROM bills
+        JOIN customers ON bills.customer_id = customers.id
+    """
 
-    if IS_RENDER:
-        # PostgreSQL uses ILIKE
-        base_query = """
-            SELECT bills.id, bills.bill_date, bills.total,
-                   customers.id AS customer_id,
-                   customers.name AS customer_name
-            FROM bills
-            JOIN customers ON bills.customer_id = customers.id
-        """
-        if search:
-            cur.execute(base_query + " WHERE customers.name ILIKE %s OR CAST(customers.id AS TEXT) ILIKE %s ORDER BY bills.id DESC",
-                        (f"%{search}%", f"%{search}%"))
-        else:
-            cur.execute(base_query + " ORDER BY bills.id DESC")
-
-        bills = cur.fetchall()
+    if search:
+        bills = db_execute(
+            cur,
+            query + " WHERE customers.name LIKE %s OR CAST(customers.id AS TEXT) LIKE %s ORDER BY bills.id DESC",
+            (f"%{search}%", f"%{search}%"),
+            fetch=True
+        )
     else:
-        # SQLite uses LIKE
-        base_query = """
-            SELECT bills.id, bills.bill_date, bills.total,
-                   customers.id AS customer_id,
-                   customers.name AS customer_name
-            FROM bills
-            JOIN customers ON bills.customer_id = customers.id
-        """
+        bills = db_execute(cur, query + " ORDER BY bills.id DESC", fetch=True)
 
-        if search:
-            cur.execute(base_query + " WHERE customers.name LIKE ? OR customers.id LIKE ? ORDER BY bills.id DESC",
-                        (f"%{search}%", f"%{search}%"))
-        else:
-            cur.execute(base_query + " ORDER BY bills.id DESC")
-
-        bills = cur.fetchall()
-
-    # Bill items
-    if IS_RENDER:
-        cur.execute("""
-            SELECT bill_items.bill_id,
-                   products.name AS product_name,
-                   bill_items.price,
-                   bill_items.quantity,
-                   bill_items.item_total
-            FROM bill_items
-            JOIN products ON bill_items.product_id = products.id
-        """)
-    else:
-        cur.execute("""
-            SELECT bill_items.bill_id,
-                   products.name AS product_name,
-                   bill_items.price,
-                   bill_items.quantity,
-                   bill_items.item_total
-            FROM bill_items
-            JOIN products ON bill_items.product_id = products.id
-        """)
-
-    bill_items = cur.fetchall()
+    bill_items = db_execute(cur, """
+        SELECT bill_items.bill_id,
+               products.name AS product_name,
+               bill_items.price,
+               bill_items.quantity,
+               bill_items.item_total
+        FROM bill_items
+        JOIN products ON bill_items.product_id = products.id
+    """, fetch=True)
 
     cur.close()
     conn.close()
@@ -262,11 +233,8 @@ def add_bill():
     conn = get_db()
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM customers ORDER BY id")
-    customers = cur.fetchall()
-
-    cur.execute("SELECT * FROM products ORDER BY id")
-    products = cur.fetchall()
+    customers = db_execute(cur, "SELECT * FROM customers ORDER BY id", fetch=True)
+    products = db_execute(cur, "SELECT * FROM products ORDER BY id", fetch=True)
 
     if request.method == "POST":
         customer_id = request.form.get("customer")
@@ -274,43 +242,27 @@ def add_bill():
         prices = request.form.getlist("price[]")
         quantities = request.form.getlist("quantity[]")
 
+        db_execute(cur,
+                   "INSERT INTO bills (customer_id, bill_date, total) VALUES (%s, %s, %s)",
+                   (customer_id, date.today(), 0))
+
+        bill_id = cur.lastrowid if not USE_POSTGRES else db_execute(
+            cur, "SELECT id FROM bills ORDER BY id DESC LIMIT 1", fetch=True
+        )[0]["id"]
+
         total = 0
 
-        if IS_RENDER:
-            cur.execute(
-                "INSERT INTO bills (customer_id, bill_date, total) VALUES (%s, %s, %s) RETURNING id",
-                (customer_id, date.today(), 0)
-            )
-            bill_id = cur.fetchone()["id"]
-        else:
-            cur.execute(
-                "INSERT INTO bills (customer_id, bill_date, total) VALUES (?, ?, ?)",
-                (customer_id, date.today(), 0)
-            )
-            bill_id = cur.lastrowid
-
-        # Insert bill items
         for i in range(len(product_ids)):
             if prices[i] and quantities[i]:
                 item_total = float(prices[i]) * float(quantities[i])
                 total += item_total
 
-                if IS_RENDER:
-                    cur.execute("""
-                        INSERT INTO bill_items (bill_id, product_id, price, quantity, item_total)
-                        VALUES (%s, %s, %s, %s, %s)
-                    """, (bill_id, product_ids[i], prices[i], quantities[i], item_total))
-                else:
-                    cur.execute("""
-                        INSERT INTO bill_items (bill_id, product_id, price, quantity, item_total)
-                        VALUES (?, ?, ?, ?, ?)
-                    """, (bill_id, product_ids[i], prices[i], quantities[i], item_total))
+                db_execute(cur, """
+                    INSERT INTO bill_items (bill_id, product_id, price, quantity, item_total)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (bill_id, product_ids[i], prices[i], quantities[i], item_total))
 
-        # Update total
-        if IS_RENDER:
-            cur.execute("UPDATE bills SET total = %s WHERE id = %s", (total, bill_id))
-        else:
-            cur.execute("UPDATE bills SET total = ? WHERE id = ?", (total, bill_id))
+        db_execute(cur, "UPDATE bills SET total=%s WHERE id=%s", (total, bill_id))
 
         conn.commit()
         cur.close()
@@ -320,6 +272,111 @@ def add_bill():
     cur.close()
     conn.close()
     return render_template("add_bill.html", customers=customers, products=products)
+
+
+# ---------------------------------------
+# PURCHASE SUMMARY (ONLY UPLOADED INVOICE ITEMS)
+# ---------------------------------------
+@app.route("/purchase_summary")
+def purchase_summary():
+    conn = get_db()
+    cur = conn.cursor()
+
+    summary = db_execute(cur, """
+        SELECT 
+            product_name,
+            SUM(quantity) AS total_quantity,
+            AVG(price) AS avg_price,
+            SUM(item_total) AS total_amount
+        FROM invoice_items_temp
+        GROUP BY product_name
+        ORDER BY product_name
+    """, fetch=True)
+
+    cur.close()
+    conn.close()
+
+    return render_template("purchase_summary.html", summary=summary)
+
+
+# ---------------------------------------
+# UPLOAD INVOICE (PDF / IMAGE / TEXT)
+# ---------------------------------------
+@app.route("/upload_invoice", methods=["GET", "POST"])
+def upload_invoice():
+    if request.method == "GET":
+        return render_template("upload_invoice.html")
+
+    uploaded_text = ""
+    file = request.files.get("invoice_file")
+    text_input = request.form.get("invoice_text", "").strip()
+
+    # Case 1: Manual text
+    if text_input:
+        uploaded_text = text_input
+
+    # Case 2: File upload
+    elif file and file.filename:
+        os.makedirs("uploads", exist_ok=True)
+        filepath = "uploads/" + file.filename
+        file.save(filepath)
+
+        if file.filename.lower().endswith(".pdf"):
+            text = ""
+            with pdfplumber.open(filepath) as pdf:
+                for page in pdf.pages:
+                    t = page.extract_text()
+                    if t:
+                        text += t + "\n"
+            uploaded_text = text
+        else:
+            img = Image.open(filepath)
+            uploaded_text = pytesseract.image_to_string(img)
+
+    else:
+        return "No data provided", 400
+
+    # REGEX Extraction
+    pattern = r"""
+        ^\d+\s+
+        ([A-Za-z0-9 /]+)\s+
+        ([\d\.]+)\s+
+        [A-Za-z]+\s+
+        Rs\.?\s*([\d\.]+)\s+
+        Rs\.?\s*([\d\.]+)
+    """
+
+    items = re.findall(pattern, uploaded_text, re.MULTILINE | re.VERBOSE)
+
+    if not items:
+        return "Could not extract items."
+
+    # Insert ONLY into temporary summary table
+    conn = get_db()
+    cur = conn.cursor()
+
+    # Clear previous summary data
+    if USE_POSTGRES:
+        cur.execute("TRUNCATE invoice_items_temp;")
+    else:
+        cur.execute("DELETE FROM invoice_items_temp;")
+
+    # Insert new invoice items
+    for product_name, qty, price, item_total in items:
+        qty = clean_number(qty)
+        price = clean_number(price)
+        item_total = clean_number(item_total)
+
+        db_execute(cur, """
+            INSERT INTO invoice_items_temp (product_name, quantity, price, item_total)
+            VALUES (%s, %s, %s, %s)
+        """, (product_name, qty, price, item_total))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return redirect("/purchase_summary")
 
 
 # ---------------------------------------
