@@ -1,4 +1,4 @@
-import pytesseract
+import easyocr
 from PIL import Image
 import pdfplumber
 import re
@@ -13,14 +13,17 @@ import os
 app = Flask(__name__)
 
 # ---------------------------------------
-# AUTO SWITCH: SQLite (local) vs PostgreSQL (Render)
+# USE POSTGRES ON RENDER
 # ---------------------------------------
 USE_POSTGRES = bool(os.environ.get("DATABASE_URL"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+# Initialize EasyOCR (English)
+ocr_reader = easyocr.Reader(['en'], gpu=False)
+
 
 def clean_number(value):
-    """Clean OCR values safely."""
+    """Clean OCR values."""
     if not value:
         return 0.0
 
@@ -68,18 +71,16 @@ def db_execute(cur, query, params=None, fetch=False, many=False):
 
     if fetch:
         return cur.fetchall()
-
     return None
 
 
 # ---------------------------------------
-# INITIALIZE TABLES
+# INITIALIZE DB
 # ---------------------------------------
 def init_db():
     conn = get_db()
     cur = conn.cursor()
 
-    # Main app tables
     db_execute(cur, """
         CREATE TABLE IF NOT EXISTS customers (
             id SERIAL PRIMARY KEY,
@@ -116,7 +117,7 @@ def init_db():
         );
     """)
 
-    # TEMPORARY TABLE FOR INVOICE UPLOADS
+    # TEMPORARY TABLE FOR INVOICE PROCESSING
     db_execute(cur, """
         CREATE TABLE IF NOT EXISTS invoice_items_temp (
             id SERIAL PRIMARY KEY,
@@ -140,30 +141,13 @@ def seed_data():
     cur = conn.cursor()
 
     existing = db_execute(cur, "SELECT COUNT(*) AS c FROM customers", fetch=True)[0]["c"]
-
     if existing > 0:
-        cur.close()
-        conn.close()
         return
 
-    names = [
-        "Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun",
-        "Reyansh", "Sai", "Krishna", "Ishaan",
-        "Surya", "Ashok", "Ravi", "Rahul", "Vikram",
-        "Ananya", "Diya", "Meera", "Priya", "Saanvi",
-        "Lakshmi", "Kavya", "Neha", "Rohit", "Manoj",
-        "Kiran", "Pooja", "Naveen", "Suresh", "Gopal"
-    ]
+    names = ["Aarav", "Vivaan", "Aditya", "Vihaan", "Arjun", "Sai", "Krishna", "Surya", "Lakshmi"]
+    products = ["Onion", "Tomato", "Potato", "Carrot", "Spinach", "Milk", "Paneer", "Oil", "Soap"]
 
-    products = [
-        "Rice", "Wheat", "Sugar", "Salt", "Oil",
-        "Onion", "Potato", "Tomato", "Carrot", "Brinjal",
-        "Milk", "Curd", "Butter", "Paneer", "Soap",
-        "Shampoo", "Toothpaste", "Biscuit", "Tea Powder", "Coffee",
-        "Dal", "Chilli Powder", "Turmeric", "Coriander", "Spinach"
-    ]
-
-    for i in range(1, 106):
+    for i in range(1, 51):
         name = random.choice(names) + str(i)
         phone = "9" + str(random.randint(100000000, 999999999))
         db_execute(cur, "INSERT INTO customers (name, phone) VALUES (%s, %s)", (name, phone))
@@ -191,6 +175,7 @@ def index():
     cur = conn.cursor()
 
     search = request.args.get("search")
+
     query = """
         SELECT bills.id, bills.bill_date, bills.total,
                customers.id AS customer_id,
@@ -200,8 +185,7 @@ def index():
     """
 
     if search:
-        bills = db_execute(
-            cur,
+        bills = db_execute(cur,
             query + " WHERE customers.name LIKE %s OR CAST(customers.id AS TEXT) LIKE %s ORDER BY bills.id DESC",
             (f"%{search}%", f"%{search}%"),
             fetch=True
@@ -219,63 +203,11 @@ def index():
         JOIN products ON bill_items.product_id = products.id
     """, fetch=True)
 
-    cur.close()
-    conn.close()
-
     return render_template("index.html", bills=bills, bill_items=bill_items, search=search)
 
 
 # ---------------------------------------
-# ADD BILL
-# ---------------------------------------
-@app.route("/add_bill", methods=["GET", "POST"])
-def add_bill():
-    conn = get_db()
-    cur = conn.cursor()
-
-    customers = db_execute(cur, "SELECT * FROM customers ORDER BY id", fetch=True)
-    products = db_execute(cur, "SELECT * FROM products ORDER BY id", fetch=True)
-
-    if request.method == "POST":
-        customer_id = request.form.get("customer")
-        product_ids = request.form.getlist("product[]")
-        prices = request.form.getlist("price[]")
-        quantities = request.form.getlist("quantity[]")
-
-        db_execute(cur,
-                   "INSERT INTO bills (customer_id, bill_date, total) VALUES (%s, %s, %s)",
-                   (customer_id, date.today(), 0))
-
-        bill_id = cur.lastrowid if not USE_POSTGRES else db_execute(
-            cur, "SELECT id FROM bills ORDER BY id DESC LIMIT 1", fetch=True
-        )[0]["id"]
-
-        total = 0
-
-        for i in range(len(product_ids)):
-            if prices[i] and quantities[i]:
-                item_total = float(prices[i]) * float(quantities[i])
-                total += item_total
-
-                db_execute(cur, """
-                    INSERT INTO bill_items (bill_id, product_id, price, quantity, item_total)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (bill_id, product_ids[i], prices[i], quantities[i], item_total))
-
-        db_execute(cur, "UPDATE bills SET total=%s WHERE id=%s", (total, bill_id))
-
-        conn.commit()
-        cur.close()
-        conn.close()
-        return redirect("/")
-
-    cur.close()
-    conn.close()
-    return render_template("add_bill.html", customers=customers, products=products)
-
-
-# ---------------------------------------
-# PURCHASE SUMMARY (ONLY UPLOADED INVOICE ITEMS)
+# PURCHASE SUMMARY (ONLY TEMP DATA)
 # ---------------------------------------
 @app.route("/purchase_summary")
 def purchase_summary():
@@ -283,24 +215,20 @@ def purchase_summary():
     cur = conn.cursor()
 
     summary = db_execute(cur, """
-        SELECT 
-            product_name,
-            SUM(quantity) AS total_quantity,
-            AVG(price) AS avg_price,
-            SUM(item_total) AS total_amount
+        SELECT product_name,
+               SUM(quantity) AS total_quantity,
+               AVG(price) AS avg_price,
+               SUM(item_total) AS total_amount
         FROM invoice_items_temp
         GROUP BY product_name
         ORDER BY product_name
     """, fetch=True)
 
-    cur.close()
-    conn.close()
-
     return render_template("purchase_summary.html", summary=summary)
 
 
 # ---------------------------------------
-# UPLOAD INVOICE (PDF / IMAGE / TEXT)
+# UPLOAD INVOICE
 # ---------------------------------------
 @app.route("/upload_invoice", methods=["GET", "POST"])
 def upload_invoice():
@@ -311,11 +239,11 @@ def upload_invoice():
     file = request.files.get("invoice_file")
     text_input = request.form.get("invoice_text", "").strip()
 
-    # Case 1: Manual text
+    # Text input
     if text_input:
         uploaded_text = text_input
 
-    # Case 2: File upload
+    # File uploaded
     elif file and file.filename:
         os.makedirs("uploads", exist_ok=True)
         filepath = "uploads/" + file.filename
@@ -329,14 +257,16 @@ def upload_invoice():
                     if t:
                         text += t + "\n"
             uploaded_text = text
+
         else:
-            img = Image.open(filepath)
-            uploaded_text = pytesseract.image_to_string(img)
+            # EASY OCR for images
+            result = ocr_reader.readtext(filepath, detail=0)
+            uploaded_text = "\n".join(result)
 
     else:
-        return "No data provided", 400
+        return "No input provided", 400
 
-    # REGEX Extraction
+    # REGEX extraction
     pattern = r"""
         ^\d+\s+
         ([A-Za-z0-9 /]+)\s+
@@ -349,28 +279,27 @@ def upload_invoice():
     items = re.findall(pattern, uploaded_text, re.MULTILINE | re.VERBOSE)
 
     if not items:
-        return "Could not extract items."
+        return "Could not extract items"
 
-    # Insert ONLY into temporary summary table
+    # Insert clean summary
     conn = get_db()
     cur = conn.cursor()
 
-    # Clear previous summary data
+    # Clear previous summary
     if USE_POSTGRES:
         cur.execute("TRUNCATE invoice_items_temp;")
     else:
         cur.execute("DELETE FROM invoice_items_temp;")
 
-    # Insert new invoice items
-    for product_name, qty, price, item_total in items:
-        qty = clean_number(qty)
-        price = clean_number(price)
-        item_total = clean_number(item_total)
+    for name, qty, price, total in items:
+        qty_f = clean_number(qty)
+        price_f = clean_number(price)
+        total_f = clean_number(total)
 
         db_execute(cur, """
             INSERT INTO invoice_items_temp (product_name, quantity, price, item_total)
             VALUES (%s, %s, %s, %s)
-        """, (product_name, qty, price, item_total))
+        """, (name, qty_f, price_f, total_f))
 
     conn.commit()
     cur.close()
