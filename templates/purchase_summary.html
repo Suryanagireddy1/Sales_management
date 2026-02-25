@@ -5,18 +5,28 @@
 
 <table class="table table-striped">
     <tr>
+        <th>Status</th>
         <th>Product</th>
         <th>Total Quantity Needed</th>
         <th>Avg Price (from customer orders)</th>
         <th>Total Amount</th>
+
     </tr>
 
     {% for item in summary %}
     <tr>
+        <td>
+            <select class="form-select" name="status_{{ item.product_name }}">
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+            </select>
+        </td>
         <td>{{ item.product_name }}</td>
         <td>{{ item.total_quantity }}</td>
         <td>₹ {{ item.avg_price }}</td>
         <td>₹ {{ item.total_amount }}</td>
+
+
     </tr>
     {% endfor %}
 </table>
