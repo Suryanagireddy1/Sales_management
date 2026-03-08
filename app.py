@@ -145,25 +145,20 @@ def seed_products():
     conn = get_db()
     cur = conn.cursor()
 
-    existing = db_execute(cur, "SELECT COUNT(*) as c FROM products", fetch=True)[0]["c"]
+    # Remove existing products
+    db_execute(cur, "DELETE FROM products")
 
-    if existing == 0:
-        for item in items:
-            db_execute(
-                cur,
-                "INSERT INTO products (name,price) VALUES (%s,%s)",
-                (item,0)
-            )
+    # Insert new products
+    for item in items:
+        db_execute(
+            cur,
+            "INSERT INTO products (name,price) VALUES (%s,%s)",
+            (item,0)
+        )
 
-        conn.commit()
-
+    conn.commit()
     cur.close()
     conn.close()
-
-
-with app.app_context():
-    init_db()
-    seed_products()
 
 
 # ---------------------------------------
