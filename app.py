@@ -251,26 +251,40 @@ def add_bill():
 # ---------------------------------------
 # ADD CUSTOMER
 # ---------------------------------------
-@app.route("/add_customer", methods=["GET","POST"])
+@app.route("/add_customer", methods=["GET", "POST"])
 def add_customer():
+
+    conn = get_db()
+    cur = conn.cursor()
 
     if request.method == "POST":
 
+        customer_id = request.form.get("customer_id")
         name = request.form.get("name")
         phone = request.form.get("phone")
 
-        conn = get_db()
-        cur = conn.cursor()
+        if customer_id:   # If ID entered → update existing
+            db_execute(
+                cur,
+                "UPDATE customers SET name=%s, phone=%s WHERE id=%s",
+                (name, phone, customer_id)
+            )
 
-        db_execute(cur,
-        "INSERT INTO customers (name, phone) VALUES (%s,%s)",
-        (name,phone))
+        else:   # If no ID → create new
+            db_execute(
+                cur,
+                "INSERT INTO customers (name, phone) VALUES (%s,%s)",
+                (name, phone)
+            )
 
         conn.commit()
         cur.close()
         conn.close()
 
         return redirect("/add_bill")
+
+    cur.close()
+    conn.close()
 
     return render_template("add_customer.html")
 
