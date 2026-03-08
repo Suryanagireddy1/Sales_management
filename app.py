@@ -350,6 +350,29 @@ def upload_invoice():
     conn.close()
 
     return redirect("/purchase_summary")
+@app.route("/add_customer", methods=["GET", "POST"])
+def add_customer():
+
+    if request.method == "POST":
+
+        name = request.form["name"]
+        stall_id = request.form["stall_id"]
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "INSERT INTO customers (name, stall_id) VALUES (%s,%s)",
+            (name, stall_id)
+        )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return redirect("/create_bill")
+
+    return render_template("add_customer.html")
 
 # ---------------------------------------
 # RUN APP
