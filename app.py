@@ -123,7 +123,7 @@ def init_db():
 
 
 # ---------------------------------------
-# SEED PRODUCTS
+# INSERT PRODUCTS IF EMPTY
 # ---------------------------------------
 def seed_products():
 
