@@ -145,27 +145,20 @@ def seed_products():
     conn = get_db()
     cur = conn.cursor()
 
-    # Remove old products
+    # delete old products
     db_execute(cur, "DELETE FROM products")
 
-    # Reset ID sequence (important for SQLite)
-    try:
-        db_execute(cur, "DELETE FROM sqlite_sequence WHERE name='products'")
-    except:
-        pass
-
-    # Insert new items
+    # insert new products
     for item in items:
         db_execute(
             cur,
-            "INSERT INTO products (name, price) VALUES (%s,%s)",
-            (item,0)
+            "INSERT INTO products (name, price) VALUES (%s, %s)",
+            (item, 0)
         )
 
     conn.commit()
     cur.close()
     conn.close()
-
 # ---------------------------------------
 # HOME PAGE
 # ---------------------------------------
