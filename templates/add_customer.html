@@ -1,14 +1,14 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<div class="container mt-4"><h3>Add New Customer</h3><form method="POST"><div class="mb-3">
+<h3>Add / Replace Customer</h3><form method="POST"><div class="mb-3">
+<label class="form-label">Customer ID</label>
+<input type="number" name="customer_id" class="form-control" required>
+</div><div class="mb-3">
 <label class="form-label">Customer Name</label>
 <input type="text" name="name" class="form-control" required>
-</div><div class="mb-3">
-<label class="form-label">Stall ID / Customer ID</label>
-<input type="text" name="stall_id" class="form-control" required>
 </div><button type="submit" class="btn btn-success">
 Save Customer
-</button><a href="/create_bill" class="btn btn-secondary">
+</button><a href="/add_bill" class="btn btn-secondary">
 Back
-</a></form></div>{% endblock %}
+</a></form>{% endblock %}
