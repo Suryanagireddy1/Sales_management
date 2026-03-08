@@ -10,7 +10,7 @@ import os
 app = Flask(__name__)
 
 # ---------------------------------------
-# AUTO SWITCH DATABASE
+# DATABASE SWITCH (SQLite / PostgreSQL)
 # ---------------------------------------
 USE_POSTGRES = bool(os.environ.get("DATABASE_URL"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -81,7 +81,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS products(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         price REAL
     )
@@ -89,7 +89,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS bills(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         customer_id INTEGER,
         bill_date TEXT,
         total REAL
@@ -98,7 +98,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS bill_items(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         bill_id INTEGER,
         product_id INTEGER,
         price REAL,
@@ -109,7 +109,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS invoice_items_temp(
-        id SERIAL PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         product_name TEXT,
         quantity REAL,
         price REAL,
@@ -123,7 +123,7 @@ def init_db():
 
 
 # ---------------------------------------
-# INSERT PRODUCTS IF EMPTY
+# INSERT PRODUCT ITEMS
 # ---------------------------------------
 def seed_products():
 
@@ -145,20 +145,28 @@ def seed_products():
     conn = get_db()
     cur = conn.cursor()
 
-    # delete old products
     db_execute(cur, "DELETE FROM products")
 
-    # insert new products
     for item in items:
         db_execute(
             cur,
-            "INSERT INTO products (name, price) VALUES (%s, %s)",
-            (item, 0)
+            "INSERT INTO products (name,price) VALUES (%s,%s)",
+            (item,0)
         )
 
     conn.commit()
     cur.close()
     conn.close()
+
+
+# ---------------------------------------
+# RUN DATABASE INITIALIZATION
+# ---------------------------------------
+with app.app_context():
+    init_db()
+    seed_products()
+
+
 # ---------------------------------------
 # HOME PAGE
 # ---------------------------------------
@@ -218,8 +226,7 @@ def add_bill():
         "INSERT INTO bills(customer_id,bill_date,total) VALUES(%s,%s,%s)",
         (customer_id,date.today(),0))
 
-        bill_id = cur.lastrowid if not USE_POSTGRES else db_execute(
-            cur,"SELECT id FROM bills ORDER BY id DESC LIMIT 1",fetch=True)[0]["id"]
+        bill_id = cur.lastrowid
 
         total=0
 
@@ -251,7 +258,7 @@ def add_bill():
 
 
 # ---------------------------------------
-# ADD / UPDATE CUSTOMER
+# ADD CUSTOMER
 # ---------------------------------------
 @app.route("/add_customer",methods=["GET","POST"])
 def add_customer():
@@ -355,10 +362,7 @@ def upload_invoice():
     conn=get_db()
     cur=conn.cursor()
 
-    if USE_POSTGRES:
-        cur.execute("TRUNCATE invoice_items_temp")
-    else:
-        cur.execute("DELETE FROM invoice_items_temp")
+    cur.execute("DELETE FROM invoice_items_temp")
 
     for name,qty,price,total in items:
 
