@@ -49,6 +49,7 @@ def get_db():
 # UNIVERSAL QUERY EXECUTOR
 # ---------------------------------------
 def db_execute(cur, query, params=None, fetch=False):
+
     if not USE_POSTGRES:
         query = query.replace("%s", "?")
 
@@ -59,6 +60,7 @@ def db_execute(cur, query, params=None, fetch=False):
 
     if fetch:
         return cur.fetchall()
+
     return None
 
 
@@ -66,6 +68,7 @@ def db_execute(cur, query, params=None, fetch=False):
 # INITIALIZE DATABASE
 # ---------------------------------------
 def init_db():
+
     conn = get_db()
     cur = conn.cursor()
 
@@ -142,14 +145,18 @@ def seed_products():
     conn = get_db()
     cur = conn.cursor()
 
-    db_execute(cur,"DELETE FROM products")
+    existing = db_execute(cur, "SELECT COUNT(*) as c FROM products", fetch=True)[0]["c"]
 
-    for item in items:
-        db_execute(cur,
-        "INSERT INTO products(name,price) VALUES(%s,%s)",
-        (item,0))
+    if existing == 0:
+        for item in items:
+            db_execute(
+                cur,
+                "INSERT INTO products (name,price) VALUES (%s,%s)",
+                (item,0)
+            )
 
-    conn.commit()
+        conn.commit()
+
     cur.close()
     conn.close()
 
