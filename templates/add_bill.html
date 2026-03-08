@@ -1,32 +1,91 @@
-<!-- Existing Customer -->
-<div class="mb-3">
-    <label class="form-label fw-semibold">Select Existing Customer</label>
+{% extends "layout.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">🧾 Create New Bill</h3>
+    <a href="/" class="btn btn-outline-secondary">← Back</a>
+</div><div class="card shadow-sm border-0 p-4"><form method="POST"><!-- Customer Selection --><div class="mb-3">
+    <label class="form-label fw-semibold">Select Customer</label><div class="d-flex gap-2">
 
     <select name="customer" class="form-select">
-        <option value="">-- Select Customer --</option>
 
         {% for customer in customers %}
         <option value="{{ customer.id }}">
             {{ customer.name }} (ID: {{ customer.id }})
         </option>
         {% endfor %}
+
     </select>
 
-    <small class="text-muted">
-        If customer is not listed, enter new customer below.
-    </small>
+    <!-- Add New Customer -->
+    <a href="/add_customer" class="btn btn-primary">
+        + Add Customer
+    </a>
+
 </div>
 
+</div><!-- Product Table --><div class="table-responsive">
+<table class="table table-bordered align-middle" id="productTable"><thead class="table-light">
+<tr>
+<th style="width: 40%">Product</th>
+<th style="width: 20%">Price</th>
+<th style="width: 20%">Qty</th>
+<th style="width: 20%">Action</th>
+</tr>
+</thead><tbody>
+<tr><td>
+<select name="product[]" class="form-select">
+{% for product in products %}
+<option value="{{ product.id }}">
+{{ product.name }}
+</option>
+{% endfor %}
+</select>
+</td><td>
+<input type="number" step="0.01" name="price[]" class="form-control">
+</td><td>
+<input type="number" step="0.01" name="quantity[]" class="form-control">
+</td><td class="text-center">
+<button type="button" class="btn btn-danger btn-sm remove-row">X</button>
+</td></tr>
+</tbody></table>
+</div><!-- Add Product Button --><div class="mb-3">
+<button type="button" class="btn btn-outline-primary btn-sm" id="addRow">
++ Add Product
+</button>
+</div><!-- Submit --><div class="text-end">
+<button type="submit" class="btn btn-success px-4">
+Save Bill
+</button>
+</div></form></div><!-- JavaScript for dynamic rows --><script>
 
-<!-- New Customer -->
-<div class="mb-3">
-    <label class="form-label fw-semibold">New Customer Name</label>
-    <input type="text" name="new_customer_name" class="form-control"
-           placeholder="Enter new customer name">
-</div>
+document.getElementById("addRow").addEventListener("click", function() {
 
-<div class="mb-3">
-    <label class="form-label fw-semibold">Stall ID / Customer ID</label>
-    <input type="text" name="new_customer_id" class="form-control"
-           placeholder="Enter stall or customer ID">
-</div>
+let table = document.querySelector("#productTable tbody");
+
+let newRow = table.rows[0].cloneNode(true);
+
+newRow.querySelectorAll("input").forEach(input => input.value = "");
+
+table.appendChild(newRow);
+
+});
+
+
+document.addEventListener("click", function(e) {
+
+if (e.target.classList.contains("remove-row")) {
+
+let rows = document.querySelectorAll("#productTable tbody tr");
+
+if (rows.length > 1) {
+
+e.target.closest("tr").remove();
+
+}
+
+}
+
+});
+
+</script>{% endblock %}
