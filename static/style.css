@@ -1,4 +1,5 @@
-/* General Layout */
+/* ================= GENERAL LAYOUT ================= */
+
 body {
     background-color: #f4f6f9;
     font-family: 'Segoe UI', sans-serif;
@@ -9,7 +10,9 @@ h3 {
     margin-bottom: 20px;
 }
 
-/* Cards */
+
+/* ================= CARDS ================= */
+
 .card {
     border-radius: 14px;
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
@@ -24,7 +27,9 @@ h3 {
     border-bottom: 1px solid #eee;
 }
 
-/* Tables */
+
+/* ================= TABLES ================= */
+
 .table th {
     font-size: 14px;
     font-weight: 600;
@@ -39,7 +44,9 @@ h3 {
     background-color: #f1f3f5;
 }
 
-/* Forms */
+
+/* ================= FORMS ================= */
+
 .form-control,
 .form-select {
     border-radius: 8px;
@@ -53,7 +60,9 @@ h3 {
     border-color: #4e73df;
 }
 
-/* Buttons */
+
+/* ================= BUTTONS ================= */
+
 .btn {
     border-radius: 8px;
     font-weight: 500;
@@ -78,18 +87,53 @@ h3 {
     background-color: #17a673;
 }
 
-/* Search Input Group */
-.input-group input {
-    border-radius: 8px 0 0 8px;
-}
 
-.input-group .btn {
-    border-radius: 0 8px 8px 0;
-}
+/* ================= NAVBAR ================= */
 
-/* Navbar */
 .navbar {
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+
+/* ================= SEARCH BOX ================= */
+
+.search-box {
+    display: flex;
+    gap: 10px;
+}
+
+.search-box input {
+    flex: 1;
+}
+
+
+/* ================= BILL HEADER ================= */
+
+.bill-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+    font-size: 14px;
+}
+
+.bill-header div {
+    flex: 1 1 120px;
+}
+
+
+/* ================= TABLE RESPONSIVE ================= */
+
+/* Only tables inside .table-responsive will scroll */
+.table-responsive .table {
+    min-width: 600px;
+}
+
+
+/* ================= BILLING PAGE (NO SCROLL) ================= */
+
+.billing-table table {
+    width: 100%;
 }
 
 
@@ -97,7 +141,7 @@ h3 {
 
 @media (max-width: 768px) {
 
-    /* Reduce container padding */
+    /* Container padding */
     .container {
         padding-left: 10px;
         padding-right: 10px;
@@ -117,57 +161,57 @@ h3 {
         padding: 8px;
     }
 
-    /* Tables scroll horizontally */
+    /* Tables scroll only where allowed */
     .table-responsive {
         overflow-x: auto;
     }
 
-    .table {
+    .table-responsive .table {
         font-size: 13px;
         min-width: 600px;
     }
 
-    /* Inputs larger for mobile touch */
+    /* Billing table does NOT scroll */
+    .billing-table {
+        overflow-x: hidden;
+    }
+
+    .billing-table table {
+        min-width: auto;
+        font-size: 13px;
+    }
+
+    /* Larger touch inputs */
     .form-control,
     .form-select {
         font-size: 15px;
         padding: 10px;
     }
 
-    /* Buttons stack vertically */
+    /* Buttons full width */
     .btn {
         width: 100%;
         margin-bottom: 8px;
         padding: 10px;
     }
 
-    /* Search input stack */
-    .input-group {
-        flex-wrap: wrap;
+    /* Search stack */
+    .search-box {
+        flex-direction: column;
+        gap: 8px;
     }
 
-    .input-group input {
+    .search-box input,
+    .search-box button,
+    .search-box a {
         width: 100%;
-        margin-bottom: 8px;
-        border-radius: 8px;
     }
 
-    .input-group .btn {
-        width: 100%;
-        border-radius: 8px;
-        margin-bottom: 6px;
-    }
-
-    /* Header buttons stack */
-    .d-flex {
-        flex-direction: column !important;
-        align-items: stretch !important;
-    }
-
-    .d-flex a,
-    .d-flex button {
-        width: 100%;
-        margin-bottom: 6px;
+    /* Bill header stack */
+    .bill-header {
+        flex-direction: column;
+        gap: 4px;
+        font-size: 13px;
     }
 
 }
