@@ -168,7 +168,7 @@ with app.app_context():
 
 
 # ---------------------------------------
-# HOME PAGE
+# HOME PAGE (FIXED)
 # ---------------------------------------
 @app.route("/")
 def index():
@@ -186,7 +186,7 @@ def index():
     ORDER BY bills.id DESC
     """,fetch=True)
 
-    bill_items = db_execute(cur,
+    items = db_execute(cur,
     """
     SELECT bill_items.bill_id,
            products.name AS product_name,
@@ -197,10 +197,25 @@ def index():
     JOIN products ON bill_items.product_id=products.id
     """,fetch=True)
 
+    # GROUP ITEMS BY BILL
+    bill_items = {}
+
+    for item in items:
+        bill_id = item["bill_id"]
+
+        if bill_id not in bill_items:
+            bill_items[bill_id] = []
+
+        bill_items[bill_id].append(item)
+
     cur.close()
     conn.close()
 
-    return render_template("index.html",bills=bills,bill_items=bill_items)
+    return render_template(
+        "index.html",
+        bills=bills,
+        bill_items=bill_items
+    )
 
 
 # ---------------------------------------
@@ -265,7 +280,7 @@ def add_bill():
 
 
 # ---------------------------------------
-# ADD / UPDATE CUSTOMER
+# ADD CUSTOMER
 # ---------------------------------------
 @app.route("/add_customer",methods=["GET","POST"])
 def add_customer():
