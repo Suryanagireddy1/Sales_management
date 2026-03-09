@@ -182,38 +182,31 @@ def index():
            customers.name AS customer_name,
            customers.id AS customer_id
     FROM bills
-    JOIN customers ON bills.customer_id = customers.id
+    JOIN customers ON bills.customer_id=customers.id
     ORDER BY bills.id DESC
     """,fetch=True)
 
-    items = db_execute(cur,
-    """
-    SELECT bill_items.bill_id,
-           products.name AS product_name,
-           bill_items.price,
-           bill_items.quantity,
-           bill_items.item_total
-    FROM bill_items
-    JOIN products ON bill_items.product_id = products.id
-    """,fetch=True)
+    # attach items to each bill
+    for bill in bills:
 
-    bill_items = {}
+        items = db_execute(cur,
+        """
+        SELECT products.name AS product_name,
+               bill_items.price,
+               bill_items.quantity,
+               bill_items.item_total
+        FROM bill_items
+        JOIN products ON bill_items.product_id=products.id
+        WHERE bill_items.bill_id=%s
+        """,
+        (bill["id"],),
+        fetch=True)
 
-    for item in items:
-        bill_id = item["bill_id"]
-
-        if bill_id not in bill_items:
-            bill_items[bill_id] = []
-
-        bill_items[bill_id].append(item)
+        bill["items"] = items
 
     conn.close()
 
-    return render_template(
-        "index.html",
-        bills=bills,
-        bill_items=bill_items
-    )
+    return render_template("index.html", bills=bills)
 
 
 # ---------------------------------------
