@@ -7,37 +7,43 @@ body {
 
 h3 {
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 
 /* ================= CARDS ================= */
 
 .card {
-    border-radius: 14px;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     border: none;
     overflow: hidden;
 }
 
 .card-header {
-    background-color: #ffffff;
+    background: #ffffff;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
     border-bottom: 1px solid #eee;
+    padding: 8px 10px;
 }
 
 
 /* ================= TABLES ================= */
 
 .table th {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .table td {
-    font-size: 14px;
+    font-size: 13px;
     vertical-align: middle;
+}
+
+.table th,
+.table td{
+    padding:6px 8px;
 }
 
 .table-hover tbody tr:hover {
@@ -49,14 +55,14 @@ h3 {
 
 .form-control,
 .form-select {
-    border-radius: 8px;
-    padding: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 13px;
 }
 
 .form-control:focus,
 .form-select:focus {
-    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.2);
+    box-shadow: 0 0 0 0.15rem rgba(78,115,223,0.2);
     border-color: #4e73df;
 }
 
@@ -64,9 +70,9 @@ h3 {
 /* ================= BUTTONS ================= */
 
 .btn {
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 500;
-    padding: 6px 14px;
+    padding: 6px 12px;
 }
 
 .btn-primary {
@@ -91,127 +97,126 @@ h3 {
 /* ================= NAVBAR ================= */
 
 .navbar {
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
 }
 
 
 /* ================= SEARCH BOX ================= */
 
 .search-box {
-    display: flex;
-    gap: 10px;
+    display:flex;
+    gap:8px;
 }
 
 .search-box input {
-    flex: 1;
+    flex:1;
 }
 
 
 /* ================= BILL HEADER ================= */
 
-.bill-header {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: space-between;
-    font-size: 14px;
+.bill-header{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:space-between;
+    font-size:13px;
 }
 
-.bill-header div {
-    flex: 1 1 120px;
+.bill-header div{
+    flex:1 1 auto;
+    white-space:nowrap;
 }
 
 
 /* ================= TABLE RESPONSIVE ================= */
 
-/* Only tables inside .table-responsive will scroll */
 .table-responsive .table {
-    min-width: 600px;
+    min-width: 550px;
 }
 
 
 /* ================= BILLING PAGE (NO SCROLL) ================= */
 
-.billing-table table {
-    width: 100%;
+.billing-table table{
+    width:100%;
 }
 
 
 /* ================= MOBILE STYLING ================= */
 
-@media (max-width: 768px) {
+@media (max-width:768px){
 
     /* Container padding */
-    .container {
-        padding-left: 10px;
-        padding-right: 10px;
+    .container{
+        padding-left:8px;
+        padding-right:8px;
     }
 
-    h3 {
-        font-size: 18px;
-        margin-bottom: 12px;
+    h3{
+        font-size:17px;
+        margin-bottom:10px;
     }
 
-    .card {
-        padding: 10px;
+    .card{
+        padding:6px;
     }
 
-    .card-header {
-        font-size: 13px;
-        padding: 8px;
+    .card-header{
+        font-size:12px;
+        padding:6px 8px;
     }
 
-    /* Tables scroll only where allowed */
-    .table-responsive {
-        overflow-x: auto;
+    /* Tables scroll only where needed */
+    .table-responsive{
+        overflow-x:auto;
     }
 
-    .table-responsive .table {
-        font-size: 13px;
-        min-width: 600px;
+    .table-responsive .table{
+        font-size:12px;
+        min-width:520px;
     }
 
-    /* Billing table does NOT scroll */
-    .billing-table {
-        overflow-x: hidden;
+    /* Billing page table no scroll */
+    .billing-table{
+        overflow-x:hidden;
     }
 
-    .billing-table table {
-        min-width: auto;
-        font-size: 13px;
+    .billing-table table{
+        min-width:auto;
+        font-size:12px;
     }
 
-    /* Larger touch inputs */
+    /* Touch inputs */
     .form-control,
-    .form-select {
-        font-size: 15px;
-        padding: 10px;
+    .form-select{
+        font-size:14px;
+        padding:8px;
     }
 
-    /* Buttons full width */
-    .btn {
-        width: 100%;
-        margin-bottom: 8px;
-        padding: 10px;
+    /* Buttons compact */
+    .btn{
+        padding:8px 10px;
+        margin-bottom:6px;
     }
 
     /* Search stack */
-    .search-box {
-        flex-direction: column;
-        gap: 8px;
+    .search-box{
+        flex-direction:column;
+        gap:6px;
     }
 
     .search-box input,
     .search-box button,
-    .search-box a {
-        width: 100%;
+    .search-box a{
+        width:100%;
     }
 
     /* Bill header stack */
-    .bill-header {
-        flex-direction: column;
-        gap: 4px;
-        font-size: 13px;
+    .bill-header{
+        flex-direction:column;
+        gap:3px;
+        font-size:12px;
     }
 
 }
