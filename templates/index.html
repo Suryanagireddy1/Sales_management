@@ -69,25 +69,15 @@
 
         <div class="bill-header">
 
-            <div>
-                <strong>Bill #{{ bill.id }}</strong>
-            </div>
+            <div><strong>Bill #{{ bill.id }}</strong></div>
 
-            <div>
-                📅 {{ bill.bill_date }}
-            </div>
+            <div>📅 {{ bill.bill_date }}</div>
 
-            <div>
-                👤 {{ bill.customer_name }}
-            </div>
+            <div>👤 {{ bill.customer_name }}</div>
 
-            <div>
-                ID: {{ bill.customer_id }}
-            </div>
+            <div>ID: {{ bill.customer_id }}</div>
 
-            <div class="text-success fw-bold">
-                ₹ {{ bill.total }}
-            </div>
+            <div class="text-success fw-bold">₹ {{ bill.total }}</div>
 
         </div>
 
@@ -111,16 +101,32 @@
 
             <tbody>
 
-            {% for item in bill_items.get(bill.id, []) %}
+            {% set found = false %}
 
-            <tr>
-                <td>{{ item.product_name }}</td>
-                <td>₹ {{ item.price }}</td>
-                <td>{{ item.quantity }}</td>
-                <td class="fw-semibold">₹ {{ item.item_total }}</td>
-            </tr>
+            {% for item in bill_items %}
+
+                {% if item.bill_id == bill.id %}
+
+                {% set found = true %}
+
+                <tr>
+                    <td>{{ item.product_name }}</td>
+                    <td>₹ {{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td class="fw-semibold">₹ {{ item.item_total }}</td>
+                </tr>
+
+                {% endif %}
 
             {% endfor %}
+
+            {% if not found %}
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    No items
+                </td>
+            </tr>
+            {% endif %}
 
             </tbody>
 
