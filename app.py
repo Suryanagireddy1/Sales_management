@@ -10,24 +10,10 @@ import os
 app = Flask(__name__)
 
 # ---------------------------------------
-# DATABASE SWITCH (SQLite / PostgreSQL)
+# DATABASE SWITCH
 # ---------------------------------------
 USE_POSTGRES = bool(os.environ.get("DATABASE_URL"))
 DATABASE_URL = os.environ.get("DATABASE_URL")
-
-
-# ---------------------------------------
-# CLEAN NUMBER
-# ---------------------------------------
-def clean_number(value):
-    if not value:
-        return 0.0
-    value = value.replace(",", "").replace("Rs", "").replace("₹", "")
-    value = value.replace(":", "").replace(" ", "").strip()
-    try:
-        return float(value)
-    except:
-        return 0.0
 
 
 # ---------------------------------------
@@ -65,7 +51,21 @@ def db_execute(cur, query, params=None, fetch=False):
 
 
 # ---------------------------------------
-# INITIALIZE DATABASE
+# CLEAN NUMBER
+# ---------------------------------------
+def clean_number(value):
+    if not value:
+        return 0.0
+    value = value.replace(",", "").replace("Rs", "").replace("₹", "")
+    value = value.replace(":", "").replace(" ", "").strip()
+    try:
+        return float(value)
+    except:
+        return 0.0
+
+
+# ---------------------------------------
+# CREATE TABLES
 # ---------------------------------------
 def init_db():
 
@@ -74,14 +74,14 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS customers(
-        id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         name TEXT
     )
     """)
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS products(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         name TEXT,
         price REAL
     )
@@ -89,7 +89,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS bills(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         customer_id INTEGER,
         bill_date TEXT,
         total REAL
@@ -98,7 +98,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS bill_items(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         bill_id INTEGER,
         product_id INTEGER,
         price REAL,
@@ -109,7 +109,7 @@ def init_db():
 
     db_execute(cur, """
     CREATE TABLE IF NOT EXISTS invoice_items_temp(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         product_name TEXT,
         quantity REAL,
         price REAL,
@@ -123,7 +123,7 @@ def init_db():
 
 
 # ---------------------------------------
-# INSERT PRODUCT ITEMS
+# INSERT PRODUCT LIST
 # ---------------------------------------
 def seed_products():
 
@@ -160,7 +160,7 @@ def seed_products():
 
 
 # ---------------------------------------
-# RUN DATABASE INITIALIZATION
+# RUN DB SETUP
 # ---------------------------------------
 with app.app_context():
     init_db()
@@ -226,7 +226,14 @@ def add_bill():
         "INSERT INTO bills(customer_id,bill_date,total) VALUES(%s,%s,%s)",
         (customer_id,date.today(),0))
 
-        bill_id = cur.lastrowid
+        if USE_POSTGRES:
+            bill_id=db_execute(
+                cur,
+                "SELECT id FROM bills ORDER BY id DESC LIMIT 1",
+                fetch=True
+            )[0]["id"]
+        else:
+            bill_id=cur.lastrowid
 
         total=0
 
@@ -258,7 +265,7 @@ def add_bill():
 
 
 # ---------------------------------------
-# ADD CUSTOMER
+# ADD / UPDATE CUSTOMER
 # ---------------------------------------
 @app.route("/add_customer",methods=["GET","POST"])
 def add_customer():
