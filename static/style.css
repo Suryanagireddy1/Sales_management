@@ -92,17 +92,56 @@ h3 {
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
 }
 
+
+/* ================= MOBILE STYLING ================= */
+
 @media (max-width: 768px) {
+
+    /* Reduce container padding */
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
 
     h3 {
         font-size: 18px;
+        margin-bottom: 12px;
+    }
+
+    .card {
+        padding: 10px;
     }
 
     .card-header {
         font-size: 13px;
+        padding: 8px;
     }
 
-    /* DO NOT override input-group display */
+    /* Tables scroll horizontally */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .table {
+        font-size: 13px;
+        min-width: 600px;
+    }
+
+    /* Inputs larger for mobile touch */
+    .form-control,
+    .form-select {
+        font-size: 15px;
+        padding: 10px;
+    }
+
+    /* Buttons stack vertically */
+    .btn {
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 10px;
+    }
+
+    /* Search input stack */
     .input-group {
         flex-wrap: wrap;
     }
@@ -119,15 +158,16 @@ h3 {
         margin-bottom: 6px;
     }
 
-    /* Improve tables */
-    .table {
-        font-size: 13px;
+    /* Header buttons stack */
+    .d-flex {
+        flex-direction: column !important;
+        align-items: stretch !important;
     }
 
-    /* Only large action buttons full width */
-    .btn-primary,
-    .btn-success {
+    .d-flex a,
+    .d-flex button {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
+
 }
